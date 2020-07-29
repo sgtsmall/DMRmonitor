@@ -27,7 +27,7 @@ from dmr_utils.utils import int_id, get_alias, try_download, mk_full_id_dict
 
 # Configuration variables and IPSC constants
 from config import *
-WEBSERVICE_STR = ':' + WEBSERVICE_PORT
+WEBSERVICE_STR = ":{0}".format(WEBSERVICE_PORT)
 from ipsc_const import *
 
 # Opcodes for reporting protocol to DMRlink
