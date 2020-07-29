@@ -5,7 +5,8 @@ DMRLINK_IP      = '127.0.0.1'           # DMRlink's IP Address
 DMRLINK_PORT    = 4321                  # DMRlink's TCP reporting socket
 FREQUENCY       = 10                    # Frequency to push updates to web clients
 WEB_SERVER_PORT = 8080                  # Has to be above 1024 if you're not running as root
-
+#
+WEBSERVICE_PORT = 9000
 # Files and stuff for loading alias files for mapping numbers to names
 PATH            = './'                          # MUST END IN '/'
 PEER_FILE       = 'peer_ids.json'                # Will auto-download from DMR-MARC

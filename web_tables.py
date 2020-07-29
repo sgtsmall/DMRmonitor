@@ -416,7 +416,7 @@ def process_message(_message):
         dashboard_server.broadcast('l' + log_message)
         LOGBUF.append(log_message)
     else:
-        logging.debug('got unknown opcode: {}, message: {}'.format(repr(opcode), repr(_bmessage[1:])))
+        logging.debug('got unknown opcode: {}, message: {}'.format(repr(opcode), repr(_message[1:])))
 
 
 def load_dictionary(_message):
@@ -584,6 +584,7 @@ if __name__ == '__main__':
     # Create Static Website index file
     index_html = get_template(PATH + 'index_template.html')
     index_html = index_html.replace('<<<system_name>>>', REPORT_NAME)
+    index_html = index_html.replace('<<<WEBSERVICE_PORT>>>', WEBSERVICE_PORT)
 
     # Start update loop
     update_stats = task.LoopingCall(build_stats)
