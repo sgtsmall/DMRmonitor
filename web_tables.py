@@ -584,7 +584,7 @@ if __name__ == '__main__':
     # Create Static Website index file
     index_html = get_template(PATH + 'index_template.html')
     index_html = index_html.replace('<<<system_name>>>', REPORT_NAME)
-    index_html = index_html.replace('<<<WEBSERVICE_PORT>>>', WEBSERVICE_PORT)
+    index_html = index_html.replace('<<<webservice_port>>>', WEBSERVICE_PORT)
 
     # Start update loop
     update_stats = task.LoopingCall(build_stats)
