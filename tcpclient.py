@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-# Standard modules 
+# Standard modules
 import logging
 import sys
 
@@ -27,6 +27,7 @@ from dmr_utils.utils import int_id, get_alias, try_download, mk_full_id_dict
 
 # Configuration variables and IPSC constants
 from config import *
+WEBSERVICE_STR = ':' + WEBSERVICE_PORT
 from ipsc_const import *
 
 # Opcodes for reporting protocol to DMRlink
@@ -82,7 +83,7 @@ def call_mon_status(self, _payload):
     _type =     _data[22]
     _prio =     _data[23]
     _sec =      _data[24]
-    
+
 def call_mon_rpt(self, _payload):
     _payload = _data.split(',', 1)
     _name = _payload[0]
@@ -92,7 +93,7 @@ def call_mon_rpt(self, _payload):
     _source    = _data[1:5]
     _ts1_state = _data[5]
     _ts2_state = _data[6]
-    
+
 def call_mon_nack(self, _payload):
     _payload = _data.split(',', 1)
     _name = _payload[0]
@@ -105,7 +106,7 @@ def call_mon_nack(self, _payload):
 
 #
 # TABLE TEMPLATE FOR DMRLINK STATUS
-#    
+#
 def build_dmrlink_table():
     _cnow = strftime('%Y-%m-%d %H:%M:%S', localtime(time()))
     table =  '<h3>IPSC Systems Status Tables</h3>'
@@ -113,12 +114,12 @@ def build_dmrlink_table():
     table += 'Data Last Updated: {}</p>'.format(CONFIG_RX)
 
     table += '<style>table, td, th {border: .5px solid black; padding: 2px; border-collapse: collapse}</style>'
-    
+
     for ipsc in CONFIG:
         master = CONFIG[ipsc]['LOCAL']['MASTER_PEER']
-        
+
         table += '<table style="width:90%; font: 10pt arial, sans-serif">'
-        
+
         table += '<colgroup>\
             <col style="width: 30%" />\
             <col style="width: 15%" />\
@@ -129,14 +130,14 @@ def build_dmrlink_table():
             <col style="width: 5%" />\
             <col style="width: 5%" />\
             </colgroup>'
-        
+
         table += '<caption>IPSC System: <b>{}</b><br>'.format(ipsc)
         if master:
             table += 'DMRlink is the system Master'
         else:
             table += 'DMRlink is a system Peer'
         table +='</caption>'
-        
+
         table += '<tr><th rowspan="2">Alias</th>\
                       <th rowspan="2">Type</th>\
                       <th rowspan="2">Radio ID</th>\
@@ -144,15 +145,15 @@ def build_dmrlink_table():
                       <th rowspan="2">Status</th>\
                       <th colspan="3">Keep Alives</th></tr>\
                   <tr><th>Sent</th><th>Received</th><th>Missed</th></tr>'
-                
+
         if not master:
             stat = CONFIG[ipsc]['MASTER']['STATUS']
-            
+
             if stat['CONNECTED'] == True:
                 active = '<td bgcolor="#00FF00">Connected</td>'
             elif stat['CONNECTED'] == False:
                 active = '<td bgcolor="#FF0000">Disconnected</td>'
-                
+
             table += '<tr><td>{}</td><td>Master</td><td>{}</td><td>{}</td>{}<td>{}</td><td>{}</td><td>{}</td></tr>'.format(\
                     alias_string(CONFIG[ipsc]['MASTER']['RADIO_ID'], peer_ids),\
                     str(int_id(CONFIG[ipsc]['MASTER']['RADIO_ID'])).rjust(8,'0'),\
@@ -161,27 +162,27 @@ def build_dmrlink_table():
                     stat['KEEP_ALIVES_SENT'],\
                     stat['KEEP_ALIVES_RECEIVED'],\
                     stat['KEEP_ALIVES_MISSED'],)
-    
+
         if master:
             for peer in CONFIG[ipsc]['PEERS']:
                 stat = CONFIG[ipsc]['PEERS'][peer]['STATUS']
-                
+
                 if stat['CONNECTED'] == True:
                     active = '<td bgcolor="#00FF00">Connected</td>'
                 elif stat['CONNECTED'] == False:
                     active = '<td bgcolor="#FF0000">Disconnected</td>'
-                
+
                 table += '<tr><td>{}</td><td>Peer</td><td>{}</td><td>{}</td>{}<td>n/a</td><td>{}</td><td>n/a</td></tr>'.format(\
                     alias_string(peer, peer_ids),\
                     str(int_id(peer)).rjust(8,'0'),\
                     CONFIG[ipsc]['PEERS'][peer]['IP'],\
                     active,\
                     stat['KEEP_ALIVES_RECEIVED'])
-                
+
         else:
             for peer in CONFIG[ipsc]['PEERS']:
                 stat = CONFIG[ipsc]['PEERS'][peer]['STATUS']
-                
+
                 if stat['CONNECTED'] == True:
                     active = '<td bgcolor="#00FF00">Connected</td>'
                 elif stat['CONNECTED'] == False:
@@ -210,10 +211,10 @@ def build_bridge_table():
     table =  '<h3>Bridge Group Status Tables</h3>'
     table +=  '<p>Table Last Updated: {}<br>'.format(_cnow)
     table += 'Data Last Updated: {}</p>'.format(BRIDGES_RX)
-    
+
     for bridge in BRIDGES:
         table += '<style>table, td, th {border: .5px solid black; padding: 2px; border-collapse: collapse}</style>'
-        table += '<table style="width:90%; font: 10pt arial, sans-serif">'    
+        table += '<table style="width:90%; font: 10pt arial, sans-serif">'
         table += '<colgroup>\
             <col style="width: 20%" />\
             <col style="width: 5%"  />\
@@ -234,8 +235,8 @@ def build_bridge_table():
                       <th>Timeout Action</th>\
                       <th>ON Triggers</th>\
                       <th>OFF Triggers</th></tr>'
-        
-        
+
+
         for system in BRIDGES[bridge]:
             on = ''
             off = ''
@@ -253,15 +254,15 @@ def build_bridge_table():
             else:
                 exp_time = 'N/A'
                 to_action = 'None'
-            
+
             if system['ACTIVE'] == True:
                 active = '<td bgcolor="#00FF00">Connected</td>'
             elif system['ACTIVE'] == False:
                 active = '<td bgcolor="#FF0000">Disconnected</td>'
-                
+
             for trigger in system['ON']:
                 on += str(int_id(trigger)) + ' '
-                
+
             for trigger in system['OFF']:
                 off += str(int_id(trigger)) + ' '
 
@@ -289,7 +290,7 @@ def build_stats():
     if BRIDGES:
         table = 'b' + build_bridge_table()
         dashboard_server.broadcast(table)
- 
+
 
 #
 # PROCESS IN COMING MESSAGES AND TAKE THE CORRECT ACTION DEPENING ON THE OPCODE
@@ -335,7 +336,7 @@ class report(NetstringReceiver):
 
     def connectionLost(self, reason):
         pass
-        
+
     def stringReceived(self, data):
         process_message(data)
 
@@ -343,7 +344,7 @@ class report(NetstringReceiver):
 class reportClientFactory(ReconnectingClientFactory):
     def __init__(self):
         pass
-        
+
     def startedConnecting(self, connector):
         logging.info('Initiating Connection to Server.')
         if 'dashboard_server' in locals() or 'dashboard_server' in globals():
@@ -369,7 +370,7 @@ class reportClientFactory(ReconnectingClientFactory):
 # WEBSOCKET COMMUNICATION WITH THE DASHBOARD CLIENT
 #
 class dashboard(WebSocketServerProtocol):
-        
+
     def onConnect(self, request):
         logging.info('Client connecting: %s', request.peer)
 
@@ -414,7 +415,7 @@ class dashboardFactory(WebSocketServerFactory):
         for c in self.clients:
             c.sendMessage(msg.encode('utf8'))
             logging.debug('message sent to %s', c.peer)
-            
+
 #
 # STATIC WEBSERVER
 #
@@ -429,53 +430,59 @@ class web_server(Resource):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO)
-    
+    logging.basicConfig(
+        level=LOG_LEVEL,
+        filename = (LOG_PATH + LOG_NAME),
+        filemode='a',
+        format='%(asctime)s %(levelname)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+        )
     # Download alias files
-    result = try_download('./', 'peer_ids.csv', PEER_URL, (FILE_RELOAD * 86400))
+    result = try_download(PATH, PEER_FILE, PEER_URL, (FILE_RELOAD * 86400))
     logging.info(result)
-   
-    result = try_download('./', 'subscriber_ids.csv', SUBSCRIBER_URL, (FILE_RELOAD * 86400))
+
+    result = try_download(PATH, SUBSCRIBER_FILE, SUBSCRIBER_URL, (FILE_RELOAD * 86400))
     logging.info(result)
-    
+
     # Make Alias Dictionaries
     peer_ids = mk_full_id_dict(PATH, PEER_FILE, 'peer')
     if peer_ids:
         logging.info('ID ALIAS MAPPER: peer_ids dictionary is available')
-        
+
     subscriber_ids = mk_full_id_dict(PATH, SUBSCRIBER_FILE, 'subscriber')
     if subscriber_ids:
         logging.info('ID ALIAS MAPPER: subscriber_ids dictionary is available')
-    
+
     talkgroup_ids = mk_full_id_dict(PATH, TGID_FILE, 'tgid')
     if talkgroup_ids:
         logging.info('ID ALIAS MAPPER: talkgroup_ids dictionary is available')
-    
+
     local_subscriber_ids = mk_full_id_dict(PATH, LOCAL_SUB_FILE, 'subscriber')
     if local_subscriber_ids:
         logging.info('ID ALIAS MAPPER: local_subscriber_ids added to subscriber_ids dictionary')
         subscriber_ids.update(local_subscriber_ids)
-        
+
     local_peer_ids = mk_full_id_dict(PATH, LOCAL_PEER_FILE, 'peer')
     if local_peer_ids:
         logging.info('ID ALIAS MAPPER: local_peer_ids added peer_ids dictionary')
         peer_ids.update(local_peer_ids)
-    
+
     # Create Static Website index file
-    index_html = get_template('index_template.html')
+    index_html = get_template(PATH + 'index_template.html')
     index_html = index_html.replace('<<<system_name>>>', REPORT_NAME)
-    
+    index_html = index_html.replace('<<<webservice_port>>>', WEBSERVICE_STR)
+
     # Start update loop
     update_stats = task.LoopingCall(build_stats)
     update_stats.start(FREQUENCY)
-    
+
     # Connect to DMRlink
     reactor.connectTCP(DMRLINK_IP, DMRLINK_PORT, reportClientFactory())
-    
+
     # Create websocket server to push content to clients
-    dashboard_server = dashboardFactory('ws://*:9000')
+    dashboard_server = dashboardFactory('ws://*'+WEBSERVICE_STR)
     dashboard_server.protocol = dashboard
-    reactor.listenTCP(9000, dashboard_server)
+    reactor.listenTCP(WEBSERVICE_PORT, dashboard_server)
 
     # Create static web server to push initial index.html
     website = Site(web_server())

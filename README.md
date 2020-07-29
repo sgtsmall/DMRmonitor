@@ -3,11 +3,21 @@
 
 Please join the DVSwitch group at groups.io for online forum support, discussion, and to become part of the development team.
 
-DVSwitch@groups.io 
+DVSwitch@groups.io
 
 ---
 
 **Socket-Based Reporting for DMRlink**
+
+## update VK2PSF (sgtsmall)
+- fixes the downloads of subscriber and peers from csv to json (inline with other parts of project)
+
+- Adds new field WEBSERVICE_PORT to config.
+ This enables a port other than the default 9000 to be used for the ws. (was causing clashes in docker implementation)
+
+- Change logging to include timestamp and add config element LOG_LEVEL
+  - Can be DEBUG, INFO, ERROR    I recommend INFO
+
 
 Over the years, the biggest request recevied for DMRlink (other than call-routing/bridging tools) has been web-based diagnostics and/or statistics for the program.
 
