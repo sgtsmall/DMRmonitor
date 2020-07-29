@@ -481,7 +481,7 @@ class dashboard(WebSocketServerProtocol):
         self.sendMessage('b' + str(btemplate.render(_table=BTABLE['BRIDGES'])))
         for _message in LOGBUF:
             if _message:
-                self.sendMessage('l' + _message))
+                self.sendMessage('l' + _message)
 
     def onMessage(self, payload, isBinary):
         if isBinary:

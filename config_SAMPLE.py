@@ -19,3 +19,4 @@ SUBSCRIBER_URL  = 'https://www.radioid.net/static/users.json'
 # Settings for log files
 LOG_PATH        = PATH
 LOG_NAME        = 'webtables.log'
+LOG_LEVEL       = 'INFO'
