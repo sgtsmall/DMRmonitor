@@ -64,6 +64,7 @@ from dmr_utils.utils import int_id, get_alias, try_download, mk_full_id_dict
 
 # Configuration variables and IPSC constants
 from config import *
+WEBSERVICE_STR = ':' + WEBSERVICE_PORT
 from ipsc_const import *
 
 # Opcodes for reporting protocol to DMRlink
@@ -584,7 +585,7 @@ if __name__ == '__main__':
     # Create Static Website index file
     index_html = get_template(PATH + 'index_template.html')
     index_html = index_html.replace('<<<system_name>>>', REPORT_NAME)
-    index_html = index_html.replace('<<<webservice_port>>>', WEBSERVICE_PORT)
+    index_html = index_html.replace('<<<webservice_port>>>', WEBSERVICE_STR)
 
     # Start update loop
     update_stats = task.LoopingCall(build_stats)
@@ -594,7 +595,7 @@ if __name__ == '__main__':
     reactor.connectTCP(DMRLINK_IP, DMRLINK_PORT, reportClientFactory())
 
     # Create websocket server to push content to clients
-    dashboard_server = dashboardFactory('ws://*:9000')
+    dashboard_server = dashboardFactory('ws://*'+WEBSERVICE_STR)
     dashboard_server.protocol = dashboard
     reactor.listenTCP(WEBSERVICE_PORT, dashboard_server)
 
