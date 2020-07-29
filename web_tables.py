@@ -156,7 +156,7 @@ def process_rcm(_data):
         _type     = TYPE[_data[22]]
         #_prio     = _data[23]
         #_sec      = _data[24]
-        
+
         if _status != 'End' and _status != 'BSID ON':
             CTABLE[_name]['PEERS'][_source][_ts]['STATUS'] = _status
             CTABLE[_name]['PEERS'][_source][_ts]['TYPE'] = _type
@@ -173,7 +173,7 @@ def process_rcm(_data):
             CTABLE[_name]['PEERS'][_source][_ts]['DEST'] = ''
             CTABLE[_name]['PEERS'][_source][_ts]['COLOR'] = WHITE
             CTABLE[_name]['PEERS'][_source][_ts]['LAST'] = now
-        
+
     elif _packettype == CALL_MON_RPT:
         logging.debug('RCM REPEAT: {}: {}'.format(_name, repr(_data)))
         _source   = _data[1:5]
@@ -192,7 +192,7 @@ def process_rcm(_data):
                 CTABLE[_name]['PEERS'][_source][i]['STATUS'] = ''
                 CTABLE[_name]['PEERS'][_source][i]['COLOR'] = WHITE
             CTABLE[_name]['PEERS'][_source][i]['LAST'] = now
-        
+
     elif _packettype == CALL_MON_NACK:
         logging.debug('RCM NACK: {}: {}'.format(_name, repr(_data)))
         _source = _data[1:5]
@@ -205,7 +205,7 @@ def process_rcm(_data):
             for i in range(1,3):
                 CTABLE[_name]['PEERS'][_source][i]['STATUS'] = ''
                 CTABLE[_name]['PEERS'][_source][i]['COLOR'] = WHITE
-                
+
         for i in range(1,3):
             #CTABLE[_name]['PEERS'][_source][i]['TYPE'] = ''
             #CTABLE[_name]['PEERS'][_source][i]['SRC_SUB'] = ''
@@ -233,14 +233,14 @@ def add_peer(_stats_peers, _peer, _config_peer_data, _type):
     _stats_peers[_peer]['KEEP_ALIVES_MISSED'] = _config_peer_data['STATUS']['KEEP_ALIVES_MISSED']
     _stats_peers[_peer][1] = {'STATUS': '', 'TYPE': '', 'SRC_PEER': '', 'SRC_SUB': '', 'DEST': '', 'COLOR': WHITE, 'LAST': now}
     _stats_peers[_peer][2] = {'STATUS': '', 'TYPE': '', 'SRC_PEER': '', 'SRC_SUB': '', 'DEST': '', 'COLOR': WHITE, 'LAST': now}
-    
+
 def update_peer(_stats_peers, _peer, _config_peer_data):
     logging.debug('Updateing peer: {}'.format(repr(_peer)))
     _stats_peers[_peer]['CONNECTED'] = _config_peer_data['STATUS']['CONNECTED']
     _stats_peers[_peer]['KEEP_ALIVES_SENT'] = _config_peer_data['STATUS']['KEEP_ALIVES_SENT']
     _stats_peers[_peer]['KEEP_ALIVES_RECEIVED'] = _config_peer_data['STATUS']['KEEP_ALIVES_RECEIVED']
     _stats_peers[_peer]['KEEP_ALIVES_MISSED'] = _config_peer_data['STATUS']['KEEP_ALIVES_MISSED']
-    
+
 def delete_peers(_peers_to_delete, _stats_table_peers):
     for _peer in _peers_to_delete:
         del _stats_table_peers[_peer]
@@ -254,7 +254,7 @@ def build_dmrlink_table(_config, _stats_table):
         _stats_table[_ipsc]['RADIO_ID'] = int_id(_config[_ipsc]['LOCAL']['RADIO_ID'])
         _stats_table[_ipsc]['IP'] = _config[_ipsc]['LOCAL']['IP']
         _stats_peers = _stats_table[_ipsc]['PEERS']
-        
+
         # if this peer is the master
         if _stats_table[_ipsc]['MASTER'] == False:
             _peer = _config[_ipsc]['MASTER']['RADIO_ID']
@@ -271,12 +271,12 @@ def update_dmrlink_table(_config, _stats_table):
 
     for _ipsc, _ipsc_data in _config.iteritems():
         _stats_peers = _stats_table[_ipsc]['PEERS']
-        
+
         # if this peer is the master
         if _stats_table[_ipsc]['MASTER'] == False:
             _peer = _config[_ipsc]['MASTER']['RADIO_ID']
             _config_peer_data = _config[_ipsc]['MASTER']
-            
+
             _stats_peers[_peer]['RADIO_ID'] = int_id(_peer)
             update_peer(_stats_peers, _peer, _config_peer_data)
 
@@ -284,23 +284,23 @@ def update_dmrlink_table(_config, _stats_table):
         for _peer, _config_peer_data in _config[_ipsc]['PEERS'].iteritems():
             if _peer != _config[_ipsc]['LOCAL']['RADIO_ID']:
                 _stats_peers = _stats_table[_ipsc]['PEERS']
-            
+
                 # update the peer if we already have it
                 if _peer in _stats_table[_ipsc]['PEERS']:
                     update_peer(_stats_peers, _peer, _config_peer_data)
-            
+
                 # addit if we don't have it
                 if _peer not in _stats_table[_ipsc]['PEERS']:
                     add_peer(_stats_peers, _peer, _config_peer_data, 'peer')
 
         # for peers that need to be removed, never the master. This is complicated
         peers_to_delete = []
-        
-        # find any peers missing in the config update    
+
+        # find any peers missing in the config update
         for _peer, _stats_peer_data in _stats_table[_ipsc]['PEERS'].iteritems():
             if _peer not in _config[_ipsc]['PEERS'] and _peer != _config[_ipsc]['MASTER']['RADIO_ID']:
                 peers_to_delete.append(_peer)
-        
+
         # delte anything identified from the right part of the stats table
         delete_peers(peers_to_delete, _stats_table[_ipsc]['PEERS'])
 
@@ -312,7 +312,7 @@ def build_bridge_table(_bridges):
     _stats_table = {}
     _now = time()
     _cnow = strftime('%Y-%m-%d %H:%M:%S', localtime(_now))
-    
+
     for _bridge, _bridge_data in _bridges.iteritems():
         _stats_table[_bridge] = {}
 
@@ -320,7 +320,7 @@ def build_bridge_table(_bridges):
             _stats_table[_bridge][system['SYSTEM']] = {}
             _stats_table[_bridge][system['SYSTEM']]['TS'] = system['TS']
             _stats_table[_bridge][system['SYSTEM']]['TGID'] = int_id(system['TGID'])
-            
+
             if system['TO_TYPE'] == 'ON' or system['TO_TYPE'] == 'OFF':
                 if system['TIMER'] - _now > 0:
                     _stats_table[_bridge][system['SYSTEM']]['EXP_TIME'] = int(system['TIMER'] - _now)
@@ -333,24 +333,24 @@ def build_bridge_table(_bridges):
             else:
                 _stats_table[_bridge][system['SYSTEM']]['EXP_TIME'] = 'N/A'
                 _stats_table[_bridge][system['SYSTEM']]['TO_ACTION'] = 'None'
-            
+
             if system['ACTIVE'] == True:
                 _stats_table[_bridge][system['SYSTEM']]['ACTIVE'] = 'Connected'
                 _stats_table[_bridge][system['SYSTEM']]['COLOR'] = GREEN
             elif system['ACTIVE'] == False:
                 _stats_table[_bridge][system['SYSTEM']]['ACTIVE'] = 'Disconnected'
                 _stats_table[_bridge][system['SYSTEM']]['COLOR'] = RED
-            
+
             for i in range(len(system['ON'])):
                 system['ON'][i] = str(int_id(system['ON'][i]))
-                    
+
             _stats_table[_bridge][system['SYSTEM']]['TRIG_ON'] = ', '.join(system['ON'])
-            
+
             for i in range(len(system['OFF'])):
                 system['OFF'][i] = str(int_id(system['OFF'][i]))
-                
+
             _stats_table[_bridge][system['SYSTEM']]['TRIG_OFF'] = ', '.join(system['OFF'])
-    
+
     return _stats_table
 
 #
@@ -377,7 +377,7 @@ def process_message(_message):
     global CONFIG, BRIDGES, CONFIG_RX, BRIDGES_RX
     opcode = _message[:1]
     _now = strftime('%Y-%m-%d %H:%M:%S %Z', localtime(time()))
-    
+
     if opcode == OPCODE['CONFIG_SND']:
         logging.debug('got CONFIG_SND opcode')
         CONFIG = load_dictionary(_message)
@@ -391,7 +391,7 @@ def process_message(_message):
         BRIDGES = load_dictionary(_message)
         BRIDGES_RX = strftime('%Y-%m-%d %H:%M:%S', localtime(time()))
         BTABLE['BRIDGES'] = build_bridge_table(BRIDGES)
-        
+
     elif opcode == OPCODE['LINK_EVENT']:
         logging.info('LINK_EVENT Received: {}'.format(repr(_message[1:])))
     elif opcode == OPCODE['RCM_SND']:
@@ -412,11 +412,11 @@ def process_message(_message):
                 log_message = '{}: UNKNOWN GROUP VOICE LOG MESSAGE'.format(_now)
         else:
             log_message = '{}: UNKNOWN LOG MESSAGE'.format(_now)
-            
+
         dashboard_server.broadcast('l' + log_message)
         LOGBUF.append(log_message)
     else:
-        logging.debug('got unknown opcode: {}, message: {}'.format(repr(opcode), repr(_message[1:])))
+        logging.debug('got unknown opcode: {}, message: {}'.format(repr(opcode), repr(_bmessage[1:])))
 
 
 def load_dictionary(_message):
@@ -436,7 +436,7 @@ class report(NetstringReceiver):
 
     def connectionLost(self, reason):
         pass
-        
+
     def stringReceived(self, data):
         process_message(data)
 
@@ -444,7 +444,7 @@ class report(NetstringReceiver):
 class reportClientFactory(ReconnectingClientFactory):
     def __init__(self):
         pass
-        
+
     def startedConnecting(self, connector):
         logging.info('Initiating Connection to Server.')
         if 'dashboard_server' in locals() or 'dashboard_server' in globals():
@@ -470,7 +470,7 @@ class reportClientFactory(ReconnectingClientFactory):
 # WEBSOCKET COMMUNICATION WITH THE DASHBOARD CLIENT
 #
 class dashboard(WebSocketServerProtocol):
-        
+
     def onConnect(self, request):
         logging.info('Client connecting: %s', request.peer)
 
@@ -481,7 +481,7 @@ class dashboard(WebSocketServerProtocol):
         self.sendMessage('b' + str(btemplate.render(_table=BTABLE['BRIDGES'])))
         for _message in LOGBUF:
             if _message:
-                self.sendMessage('l' + _message)
+                self.sendMessage('l' + _message))
 
     def onMessage(self, payload, isBinary):
         if isBinary:
@@ -518,7 +518,7 @@ class dashboardFactory(WebSocketServerFactory):
         for c in self.clients:
             c.sendMessage(msg.encode('utf8'))
             logging.debug('message sent to %s', c.peer)
-            
+
 #
 # STATIC WEBSERVER
 #
@@ -535,38 +535,43 @@ class web_server(Resource):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO,filename = (LOG_PATH + LOG_NAME), filemode='a')
-    
+    logging.basicConfig(
+        level=LOG_LEVEL,
+        filename = (LOG_PATH + LOG_NAME),
+        filemode='a',
+        format='%(asctime)s %(levelname)s %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+        )
     # Download alias files
-    result = try_download(PATH, 'peer_ids.csv', PEER_URL, (FILE_RELOAD * 86400))
+    result = try_download(PATH, PEER_FILE, PEER_URL, (FILE_RELOAD * 86400))
     logging.info(result)
-   
-    result = try_download(PATH, 'subscriber_ids.csv', SUBSCRIBER_URL, (FILE_RELOAD * 86400))
+
+    result = try_download(PATH, SUBSCRIBER_FILE, SUBSCRIBER_URL, (FILE_RELOAD * 86400))
     logging.info(result)
-    
+
     # Make Alias Dictionaries
     peer_ids = mk_full_id_dict(PATH, PEER_FILE, 'peer')
     if peer_ids:
         logging.info('ID ALIAS MAPPER: peer_ids dictionary is available')
-        
+
     subscriber_ids = mk_full_id_dict(PATH, SUBSCRIBER_FILE, 'subscriber')
     if subscriber_ids:
         logging.info('ID ALIAS MAPPER: subscriber_ids dictionary is available')
-    
+
     talkgroup_ids = mk_full_id_dict(PATH, TGID_FILE, 'tgid')
     if talkgroup_ids:
         logging.info('ID ALIAS MAPPER: talkgroup_ids dictionary is available')
-    
+
     local_subscriber_ids = mk_full_id_dict(PATH, LOCAL_SUB_FILE, 'subscriber')
     if local_subscriber_ids:
         logging.info('ID ALIAS MAPPER: local_subscriber_ids added to subscriber_ids dictionary')
         subscriber_ids.update(local_subscriber_ids)
-        
+
     local_peer_ids = mk_full_id_dict(PATH, LOCAL_PEER_FILE, 'peer')
     if local_peer_ids:
         logging.info('ID ALIAS MAPPER: local_peer_ids added peer_ids dictionary')
         peer_ids.update(local_peer_ids)
-    
+
     # Jinja2 Stuff
     env = Environment(
         loader=PackageLoader('web_tables', 'templates'),
@@ -575,22 +580,22 @@ if __name__ == '__main__':
 
     dtemplate = env.get_template('dmrlink_table.html')
     btemplate = env.get_template('bridge_table.html')
-    
+
     # Create Static Website index file
     index_html = get_template(PATH + 'index_template.html')
     index_html = index_html.replace('<<<system_name>>>', REPORT_NAME)
-    
+
     # Start update loop
     update_stats = task.LoopingCall(build_stats)
     update_stats.start(FREQUENCY)
-    
+
     # Connect to DMRlink
     reactor.connectTCP(DMRLINK_IP, DMRLINK_PORT, reportClientFactory())
-    
+
     # Create websocket server to push content to clients
     dashboard_server = dashboardFactory('ws://*:9000')
     dashboard_server.protocol = dashboard
-    reactor.listenTCP(9000, dashboard_server)
+    reactor.listenTCP(WEBSERVICE_PORT, dashboard_server)
 
     # Create static web server to push initial index.html
     website = Site(web_server())

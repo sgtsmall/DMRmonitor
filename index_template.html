@@ -4,17 +4,17 @@
       <script type="text/javascript">
          var sock = null;
          var ellog = null;
-         
+
          window.onload = function() {
             var wsuri;
-            
+
             ellog = document.getElementById('log');
             dmrlink_table = document.getElementById('dmrlink');
             confbridge_table = document.getElementById('bridge');
-            
+
             wsuri = "ws://" + window.location.hostname + ":9000";
 
-            
+
             if ("WebSocket" in window) {
                sock = new WebSocket(wsuri);
             } else if ("MozWebSocket" in window) {
@@ -22,7 +22,7 @@
             } else {
                log("Browser does not support WebSocket!");
             }
-            
+
             if (sock) {
                sock.onopen = function() {
                   log("Connected to " + wsuri);
@@ -52,20 +52,20 @@
                }
             }
          };
-         
+
          function dmrlink(_msg) {
              dmrlink_table.innerHTML = _msg;
          };
-         
+
          function confbridge(_msg) {
              confbridge_table.innerHTML = _msg;
          };
-         
+
          function log(_msg) {
             ellog.innerHTML += _msg + '\n';
             ellog.scrollTop = ellog.scrollHeight;
          };
-         
+
       </script>
    </head>
     <body style="font: 10pt arial, sans-serif">
