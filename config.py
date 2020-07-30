@@ -19,10 +19,10 @@
 ###############################################################################
 
 '''
-This module generates the configuration data structure for hblink.py and
+This module generates the configuration data structure for ipscmonitor.py and
 assoicated programs that use it. It has been seaparated into a different
-module so as to keep hblink.py easeier to navigate. This file only needs
-updated if the items in the main configuraiton file (usually hblink.cfg)
+module so as to keep ipscmonitor.py easier to navigate. This file only needs
+updated if the items in the main configuraiton file (usually ipscmonitor.cfg)
 change.
 '''
 
@@ -49,6 +49,7 @@ def build_config(_config_file):
 
     CONFIG = {}
     CONFIG['GLOBAL'] = {}
+    CONFIG['WEBSITE'] = {}
     CONFIG['LOGGER'] = {}
     CONFIG['ALIASES'] = {}
 
@@ -61,10 +62,15 @@ def build_config(_config_file):
                     'BRIDGES_INC': config.getint(section, 'BRIDGES_INC'),
                     'DMRLINK_IP': config.getint(section, 'DMRLINK_IP'),
                     'DMRLINK_PORT': config.get(section, 'DMRLINK_PORT'),
-                    'FREQUENCY': config.get(section, 'FREQUENCY'),
+                    'FREQUENCY': config.get(section, 'FREQUENCY')
+                })
+            elif section == 'WEBSITE':
+                CONFIG['WEBSITE'].update({
+                    'PATH': config.get(section, 'PATH'),
                     'WEB_SERVER_PORT': config.get(section, 'WEB_SERVER_PORT'),
                     'WEBSERVICE_PORT': config.get(section, 'WEBSERVICE_PORT')
                 })
+
 
 
             elif section == 'LOGGER':
@@ -112,13 +118,13 @@ if __name__ == '__main__':
 
     # CLI argument parser - handles picking up the config file from the command line, and sending a "help" message
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE', help='/full/path/to/config.file (usually hblink.cfg)')
+    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE', help='/full/path/to/config.file (usually ipscmonitor.cfg)')
     cli_args = parser.parse_args()
 
 
     # Ensure we have a path for the config file, if one wasn't specified, then use the execution directory
     if not cli_args.CONFIG_FILE:
-        cli_args.CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+'/hblink.cfg'
+        cli_args.CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+'/ipscmonitor.cfg'
 
     CONFIG = build_config(cli_args.CONFIG_FILE)
     pprint(CONFIG)

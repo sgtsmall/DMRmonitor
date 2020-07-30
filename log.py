@@ -19,8 +19,8 @@
 ###############################################################################
 
 '''
-This is the logging configuration for hblink.py. It changes very infrequently,
-so keeping in a separate module keeps hblink.py more concise. this file is
+This is the logging configuration for ipscmonitor.py. It changes very infrequently,
+so keeping in a separate module keeps ipscmonitor.py more concise. this file is
 likely to never change.
 '''
 

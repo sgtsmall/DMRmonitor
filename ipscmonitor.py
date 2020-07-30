@@ -112,7 +112,7 @@ __email__      = 'vk2psf@arrl.net'
 systems = {}
 
 # Shut ourselves down gracefully by disconnecting from the masters and peers.
-def dmrmonitor_handler(_signal, _frame):
+def ipscmonitor_handler(_signal, _frame):
     for system in systems:
         logger.info('(GLOBAL) SHUTDOWN: DE-REGISTER SYSTEM: %s', system)
         systems[system].dereg()
@@ -601,13 +601,13 @@ if __name__ == '__main__':
 
     # CLI argument parser - handles picking up the config file from the command line, and sending a "help" message
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE', help='/full/path/to/config.file (usually dmrmonitor .cfg)')
+    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE', help='/full/path/to/config.file (usually ipscmonitor.cfg)')
     parser.add_argument('-l', '--logging', action='store', dest='LOG_LEVEL', help='Override config file logging level.')
     cli_args = parser.parse_args()
 
     # Ensure we have a path for the config file, if one wasn't specified, then use the execution directory
     if not cli_args.CONFIG_FILE:
-        cli_args.CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+'/dmrmonitor.cfg'
+        cli_args.CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+'/ipscmonitor.cfg'
 
     # Call the external routine to build the configuration dictionary
     CONFIG = config.build_config(cli_args.CONFIG_FILE)
@@ -624,8 +624,8 @@ if __name__ == '__main__':
 
     # Set up the signal handler
     def sig_handler(_signal, _frame):
-        logger.info('(GLOBAL) SHUTDOWN: DMRmonitor IS TERMINATING WITH SIGNAL %s', str(_signal))
-        dmrmonitor_handler(_signal, _frame)
+        logger.info('(GLOBAL) SHUTDOWN: ipscmonitor IS TERMINATING WITH SIGNAL %s', str(_signal))
+        ipscmonitor_handler(_signal, _frame)
         logger.info('(GLOBAL) SHUTDOWN: ALL SYSTEM HANDLERS EXECUTED - STOPPING REACTOR')
         reactor.stop()
 
@@ -635,11 +635,11 @@ if __name__ == '__main__':
 
     peer_ids, subscriber_ids, talkgroup_ids = mk_aliases(CONFIG)
 
-    logger.info('(GLOBAL) DMRmonitor \'dmrmonitor.py\' -- SYSTEM STARTING...')
+    logger.info('(GLOBAL) DMRmonitor \'ipscmonitor.py\' -- SYSTEM STARTING...')
 
     # Jinja2 Stuff
     env = Environment(
-        loader=PackageLoader('dmrmonitor', 'templates'),
+        loader=PackageLoader('ipscmonitor', 'templates'),
         autoescape=select_autoescape(['html', 'xml'])
     )
 
