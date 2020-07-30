@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 #
 ###############################################################################
-#   Copyright (C) 2016  Cortney T. Buffington, N0MJS <n0mjs@me.com>
+# updated 2020 VK2PSF
+# first pass to align config file format  
+# Copyright (C) 2016  Cortney T. Buffington, N0MJS <n0mjs@me.com>
 #
 #   This program is free software; you can redistribute it and/or modify
 #   it under the terms of the GNU General Public License as published by
@@ -34,7 +36,7 @@ CON_APP: True
 from __future__ import print_function
 
 # Standard modules
-import logging
+
 import sys
 
 # Twisted modules
@@ -61,10 +63,12 @@ from jinja2 import Environment, PackageLoader, select_autoescape
 
 # Utilities from K0USY Group sister project
 from dmr_utils.utils import int_id, get_alias, try_download, mk_full_id_dict
+import config
+import log
 
 # Configuration variables and IPSC constants
-from config import *
-WEBSERVICE_STR = ":{0}".format(WEBSERVICE_PORT)
+#from config import *
+WEBSERVICE_STR = ":{0}".format(_config['WEBSITE']['WEBSERVICE_PORT'])
 from ipsc_const import *
 
 # Opcodes for reporting protocol to DMRlink
@@ -532,46 +536,85 @@ class web_server(Resource):
         else:
             return 'Bad request'
 
+# ID ALIAS CREATION
+# Download
+def mk_aliases(_config):
+    if _config['ALIASES']['TRY_DOWNLOAD'] == True:
+        # Try updating peer aliases file
+        result = try_download(_config['ALIASES']['PATH'], _config['ALIASES']['PEER_FILE'], _config['ALIASES']['PEER_URL'], _config['ALIASES']['STALE_TIME'])
+        logger.info('[ALIAS]  %s', result)
+        # Try updating subscriber aliases file
+        result = try_download(_config['ALIASES']['PATH'], _config['ALIASES']['SUBSCRIBER_FILE'], _config['ALIASES']['SUBSCRIBER_URL'], _config['ALIASES']['STALE_TIME'])
+        logger.info('[ALIAS]  %s', result)
 
-
-
-if __name__ == '__main__':
-    logging.basicConfig(
-        level=LOG_LEVEL,
-        filename = (LOG_PATH + LOG_NAME),
-        filemode='a',
-        format='%(asctime)s %(levelname)s %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-        )
-    # Download alias files
-    result = try_download(PATH, PEER_FILE, PEER_URL, (FILE_RELOAD * 86400))
-    logging.info(result)
-
-    result = try_download(PATH, SUBSCRIBER_FILE, SUBSCRIBER_URL, (FILE_RELOAD * 86400))
-    logging.info(result)
-
-    # Make Alias Dictionaries
-    peer_ids = mk_full_id_dict(PATH, PEER_FILE, 'peer')
+    # Make Dictionaries
+    peer_ids = mk_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['PEER_FILE'])
     if peer_ids:
-        logging.info('ID ALIAS MAPPER: peer_ids dictionary is available')
+        logger.info('[ALIAS] ID ALIAS MAPPER: peer_ids dictionary is available')
 
-    subscriber_ids = mk_full_id_dict(PATH, SUBSCRIBER_FILE, 'subscriber')
+    subscriber_ids = mk_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['SUBSCRIBER_FILE'])
     if subscriber_ids:
-        logging.info('ID ALIAS MAPPER: subscriber_ids dictionary is available')
+        logger.info('[ALIAS] ID ALIAS MAPPER: subscriber_ids dictionary is available')
 
-    talkgroup_ids = mk_full_id_dict(PATH, TGID_FILE, 'tgid')
+    talkgroup_ids = mk_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['TGID_FILE'])
     if talkgroup_ids:
-        logging.info('ID ALIAS MAPPER: talkgroup_ids dictionary is available')
+        logger.info('[ALIAS] ID ALIAS MAPPER: talkgroup_ids dictionary is available')
 
-    local_subscriber_ids = mk_full_id_dict(PATH, LOCAL_SUB_FILE, 'subscriber')
+    local_subscriber_ids = mk_full_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['LOCAL_SUB_FILE'])
     if local_subscriber_ids:
-        logging.info('ID ALIAS MAPPER: local_subscriber_ids added to subscriber_ids dictionary')
+        logging.info('[ALIAS] ID ALIAS MAPPER: local_subscriber_ids added to subscriber_ids dictionary')
         subscriber_ids.update(local_subscriber_ids)
 
-    local_peer_ids = mk_full_id_dict(PATH, LOCAL_PEER_FILE, 'peer')
+    local_peer_ids = mk_full_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['LOCAL_PEER_FILE'])
     if local_peer_ids:
-        logging.info('ID ALIAS MAPPER: local_peer_ids added peer_ids dictionary')
+        logging.info('[ALIAS] ID ALIAS MAPPER: local_peer_ids added peer_ids dictionary')
         peer_ids.update(local_peer_ids)
+
+    return peer_ids, subscriber_ids, talkgroup_ids
+
+if __name__ == '__main__':
+    import argparse
+    import system
+    import os
+    import signal
+
+    # Change the current directory to the location of the application
+    os.chdir(os.path.dirname(os.path.realpath(sys.argv[0])))
+
+    # CLI argument parser - handles picking up the config file from the command line, and sending a "help" message
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE', help='/full/path/to/config.file (usually hblink.cfg)')
+    parser.add_argument('-l', '--logging', action='store', dest='LOG_LEVEL', help='Override config file logging level.')
+    cli_args = parser.parse_args()
+
+    # Ensure we have a path for the config file, if one wasn't specified, then use the execution directory
+    if not cli_args.CONFIG_FILE:
+        cli_args.CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+'/hblink.cfg'
+
+    # Call the external routine to build the configuration dictionary
+    CONFIG = config.build_config(cli_args.CONFIG_FILE)
+
+    # Call the external routing to start the system logger
+    if cli_args.LOG_LEVEL:
+        CONFIG['LOGGER']['LOG_LEVEL'] = cli_args.LOG_LEVEL
+    logger = log.config_logging(CONFIG['LOGGER'])
+    logger.info('\n\nCopyright (c) 2013, 2014, 2015, 2016, 2018, 2019\n\tThe Regents of the K0USY Group. All rights reserved.\n')
+    logger.debug('(GLOBAL) Logging system started, anything from here on gets logged')
+
+    # Set up the signal handler
+    def sig_handler(_signal, _frame):
+        logger.info('(GLOBAL) SHUTDOWN: DMRmonitor IS TERMINATING WITH SIGNAL %s', str(_signal))
+        hblink_handler(_signal, _frame)
+        logger.info('(GLOBAL) SHUTDOWN: ALL SYSTEM HANDLERS EXECUTED - STOPPING REACTOR')
+        reactor.stop()
+
+    # Set signal handers so that we can gracefully exit if need be
+    for sig in [signal.SIGTERM, signal.SIGINT]:
+        signal.signal(sig, sig_handler)
+
+    peer_ids, subscriber_ids, talkgroup_ids = mk_aliases(CONFIG)
+
+    logger.info('(GLOBAL) DMRmonitor \'web_tables.py\' -- SYSTEM STARTING...')
 
     # Jinja2 Stuff
     env = Environment(
@@ -583,24 +626,24 @@ if __name__ == '__main__':
     btemplate = env.get_template('bridge_table.html')
 
     # Create Static Website index file
-    index_html = get_template(PATH + 'index_template.html')
-    index_html = index_html.replace('<<<system_name>>>', REPORT_NAME)
+    index_html = get_template(_config['WEBSITE']['PATH'] + 'index_template.html')
+    index_html = index_html.replace('<<<system_name>>>', _config['GLOBAL']['REPORT_NAME'])
     index_html = index_html.replace('<<<webservice_port>>>', WEBSERVICE_STR)
 
     # Start update loop
     update_stats = task.LoopingCall(build_stats)
-    update_stats.start(FREQUENCY)
+    update_stats.start(_config['GLOBAL']['FREQUENCY'])
 
     # Connect to DMRlink
-    reactor.connectTCP(DMRLINK_IP, DMRLINK_PORT, reportClientFactory())
+    reactor.connectTCP(_config['GLOBAL']['DMRLINK_IP'], _config['GLOBAL']['DMRLINK_PORT'], reportClientFactory())
 
     # Create websocket server to push content to clients
     dashboard_server = dashboardFactory('ws://*'+WEBSERVICE_STR)
     dashboard_server.protocol = dashboard
-    reactor.listenTCP(WEBSERVICE_PORT, dashboard_server)
+    reactor.listenTCP(_config['WEBSITE']['WEBSERVICE_PORT'], dashboard_server)
 
     # Create static web server to push initial index.html
     website = Site(web_server())
-    reactor.listenTCP(WEB_SERVER_PORT, website)
+    reactor.listenTCP(_config['WEBSITE']['WEB_SERVER_PORT'], website)
 
     reactor.run()
