@@ -28,7 +28,7 @@ change.
 
 import configparser
 import sys
-import const
+
 
 from socket import gethostbyname
 

@@ -2,7 +2,7 @@
 #
 ###############################################################################
 # updated 2020 VK2PSF
-# first pass to align config file format  
+# first pass to align config file format
 # Copyright (C) 2016  Cortney T. Buffington, N0MJS <n0mjs@me.com>
 #
 #   This program is free software; you can redistribute it and/or modify
@@ -68,7 +68,7 @@ import log
 
 # Configuration variables and IPSC constants
 #from config import *
-WEBSERVICE_STR = ":{0}".format(_config['WEBSITE']['WEBSERVICE_PORT'])
+#WEBSERVICE_STR = ":{0}".format(_config['WEBSITE']['WEBSERVICE_PORT'])
 from ipsc_const import *
 
 # Opcodes for reporting protocol to DMRlink
@@ -99,6 +99,23 @@ BLUE        = '#0000ff'
 ORANGE      = '#ff8000'
 WHITE       = '#ffffff'
 
+
+# Does anybody read this stuff? There's a PEP somewhere that says I should do this.
+__author__     = 'Alex Stewart, VK2PSF'
+__copyright__  = 'Copyright (c) 2016-2019,2020 VK2PSF ,Cortney T. Buffington, N0MJS and the K0USY Group'
+__credits__    = 'Colin Durbridge, G4EML, Steve Zingman, N4IRS; Mike Zingman, N4IRR; Jonathan Naylor, G4KLX; Hans Barthen, DL5DI; Torsten Shultze, DG1HT'
+__license__    = 'GNU GPLv3'
+__maintainer__ = 'Alex Stewart , N0MJS'
+__email__      = 'vk2psf@arrl.net'
+
+# Global variables used whether we are a module or __main__
+systems = {}
+
+# Shut ourselves down gracefully by disconnecting from the masters and peers.
+def dmrmonitor_handler(_signal, _frame):
+    for system in systems:
+        logger.info('(GLOBAL) SHUTDOWN: DE-REGISTER SYSTEM: %s', system)
+        systems[system].dereg()
 
 # For importing HTML templates
 def get_template(_file):
@@ -150,7 +167,7 @@ def process_rcm(_data):
     _data = _payload[1]
     _packettype = _data[0]
     if _packettype == CALL_MON_STATUS:
-        logging.debug('RCM STATUS: {}: {}'.format(_name, repr(_data)))
+        logger.debug('RCM STATUS: {}: {}'.format(_name, repr(_data)))
         _source   = _data[1:5]
         _src_peer = int_id(_data[5:9])
         #_seq_num  = _data[9:13]
@@ -180,7 +197,7 @@ def process_rcm(_data):
             CTABLE[_name]['PEERS'][_source][_ts]['LAST'] = now
 
     elif _packettype == CALL_MON_RPT:
-        logging.debug('RCM REPEAT: {}: {}'.format(_name, repr(_data)))
+        logger.debug('RCM REPEAT: {}: {}'.format(_name, repr(_data)))
         _source   = _data[1:5]
         _ts_state = [0, _data[5], _data[6]]
         for i in range(1,3):
@@ -199,7 +216,7 @@ def process_rcm(_data):
             CTABLE[_name]['PEERS'][_source][i]['LAST'] = now
 
     elif _packettype == CALL_MON_NACK:
-        logging.debug('RCM NACK: {}: {}'.format(_name, repr(_data)))
+        logger.debug('RCM NACK: {}: {}'.format(_name, repr(_data)))
         _source = _data[1:5]
         _nack = _data[5]
         if _nack == '\x05':
@@ -218,7 +235,7 @@ def process_rcm(_data):
             #CTABLE[_name]['PEERS'][_source][i]['DEST'] = ''
             CTABLE[_name]['PEERS'][_source][i]['LAST'] = now
     else:
-        logging.error('unknown call mon recieved: {}'.format(repr(_packettype)))
+        logger.error('unknown call mon recieved: {}'.format(repr(_packettype)))
         return
 
     build_stats()
@@ -226,7 +243,7 @@ def process_rcm(_data):
 # DMRlink Table Functions
 def add_peer(_stats_peers, _peer, _config_peer_data, _type):
     now = time()
-    logging.debug('Adding peer: {}'.format(repr(_peer)))
+    logger.debug('Adding peer: {}'.format(repr(_peer)))
     _stats_peers[_peer] = {}
     _stats_peers[_peer]['TYPE'] = _type
     _stats_peers[_peer]['RADIO_ID'] = int_id(_peer)
@@ -240,7 +257,7 @@ def add_peer(_stats_peers, _peer, _config_peer_data, _type):
     _stats_peers[_peer][2] = {'STATUS': '', 'TYPE': '', 'SRC_PEER': '', 'SRC_SUB': '', 'DEST': '', 'COLOR': WHITE, 'LAST': now}
 
 def update_peer(_stats_peers, _peer, _config_peer_data):
-    logging.debug('Updateing peer: {}'.format(repr(_peer)))
+    logger.debug('Updating peer: {}'.format(repr(_peer)))
     _stats_peers[_peer]['CONNECTED'] = _config_peer_data['STATUS']['CONNECTED']
     _stats_peers[_peer]['KEEP_ALIVES_SENT'] = _config_peer_data['STATUS']['KEEP_ALIVES_SENT']
     _stats_peers[_peer]['KEEP_ALIVES_RECEIVED'] = _config_peer_data['STATUS']['KEEP_ALIVES_RECEIVED']
@@ -249,7 +266,7 @@ def update_peer(_stats_peers, _peer, _config_peer_data):
 def delete_peers(_peers_to_delete, _stats_table_peers):
     for _peer in _peers_to_delete:
         del _stats_table_peers[_peer]
-        logging.debug('Deleting peer: {}'.format(repr(_peer)))
+        logger.debug('Deleting peer: {}'.format(repr(_peer)))
 
 def build_dmrlink_table(_config, _stats_table):
     for _ipsc, _ipsc_data in _config.iteritems():
@@ -376,15 +393,16 @@ def build_stats():
         build_time = now
 
 #
-# PROCESS IN COMING MESSAGES AND TAKE THE CORRECT ACTION DEPENING ON THE OPCODE
+# PROCESS INCOMING MESSAGES AND TAKE THE CORRECT ACTION DEPENING ON THE OPCODE
 #
 def process_message(_message):
     global CONFIG, BRIDGES, CONFIG_RX, BRIDGES_RX
     opcode = _message[:1]
     _now = strftime('%Y-%m-%d %H:%M:%S %Z', localtime(time()))
+    logger.debug('got opcode: {}, message: {}'.format(repr(opcode), repr(_message[1:])))
 
     if opcode == OPCODE['CONFIG_SND']:
-        logging.debug('got CONFIG_SND opcode')
+        logger.debug('got CONFIG_SND opcode')
         CONFIG = load_dictionary(_message)
         CONFIG_RX = strftime('%Y-%m-%d %H:%M:%S', localtime(time()))
         if CTABLE:
@@ -392,19 +410,19 @@ def process_message(_message):
         else:
             build_dmrlink_table(CONFIG, CTABLE)
     elif opcode == OPCODE['BRIDGE_SND']:
-        logging.debug('got BRIDGE_SND opcode')
+        logger.debug('got BRIDGE_SND opcode')
         BRIDGES = load_dictionary(_message)
         BRIDGES_RX = strftime('%Y-%m-%d %H:%M:%S', localtime(time()))
         BTABLE['BRIDGES'] = build_bridge_table(BRIDGES)
 
     elif opcode == OPCODE['LINK_EVENT']:
-        logging.info('LINK_EVENT Received: {}'.format(repr(_message[1:])))
+        logger.info('LINK_EVENT Received: {}'.format(repr(_message[1:])))
     elif opcode == OPCODE['RCM_SND']:
         process_rcm(_message[1:])
-        logging.debug('RCM Message Received: {}'.format(repr(_message[1:])))
+        logger.debug('RCM Message Received: {}'.format(repr(_message[1:])))
         #dashboard_server.broadcast('l' + repr(_message[1:]))
     elif opcode == OPCODE['BRDG_EVENT']:
-        logging.info('BRIDGE EVENT: {}'.format(repr(_message[1:])))
+        logger.info('BRIDGE EVENT: {}'.format(repr(_message[1:])))
         p = _message[1:].split(",")
         if p[0] == 'GROUP VOICE':
             if p[1] == 'END':
@@ -421,13 +439,13 @@ def process_message(_message):
         dashboard_server.broadcast('l' + log_message)
         LOGBUF.append(log_message)
     else:
-        logging.debug('got unknown opcode: {}, message: {}'.format(repr(opcode), repr(_message[1:])))
+        logger.debug('got unknown opcode: {}, message: {}'.format(repr(opcode), repr(_message[1:])))
 
 
 def load_dictionary(_message):
     data = _message[1:]
     return loads(data)
-    logging.debug('Successfully decoded dictionary')
+    logger.debug('Successfully decoded dictionary')
 
 #
 # COMMUNICATION WITH THE DMRLINK INSTANCE
@@ -451,23 +469,23 @@ class reportClientFactory(ReconnectingClientFactory):
         pass
 
     def startedConnecting(self, connector):
-        logging.info('Initiating Connection to Server.')
+        logger.info('Initiating Connection to Server.')
         if 'dashboard_server' in locals() or 'dashboard_server' in globals():
             dashboard_server.broadcast('q' + 'Connection to DMRlink Established')
 
     def buildProtocol(self, addr):
-        logging.info('Connected.')
-        logging.info('Resetting reconnection delay')
+        logger.info('Connected.')
+        logger.info('Resetting reconnection delay')
         self.resetDelay()
         return report()
 
     def clientConnectionLost(self, connector, reason):
-        logging.info('Lost connection.  Reason: %s', reason)
+        logger.info('Lost connection.  Reason: %s', reason)
         ReconnectingClientFactory.clientConnectionLost(self, connector, reason)
         dashboard_server.broadcast('q' + 'Connection to DMRlink Lost')
 
     def clientConnectionFailed(self, connector, reason):
-        logging.info('Connection failed. Reason: %s', reason)
+        logger.info('Connection failed. Reason: %s', reason)
         ReconnectingClientFactory.clientConnectionFailed(self, connector, reason)
 
 
@@ -477,10 +495,10 @@ class reportClientFactory(ReconnectingClientFactory):
 class dashboard(WebSocketServerProtocol):
 
     def onConnect(self, request):
-        logging.info('Client connecting: %s', request.peer)
+        logger.info('Client connecting: %s', request.peer)
 
     def onOpen(self):
-        logging.info('WebSocket connection open.')
+        logger.info('WebSocket connection open.')
         self.factory.register(self)
         self.sendMessage('d' + str(dtemplate.render(_table=CTABLE)))
         self.sendMessage('b' + str(btemplate.render(_table=BTABLE['BRIDGES'])))
@@ -490,16 +508,16 @@ class dashboard(WebSocketServerProtocol):
 
     def onMessage(self, payload, isBinary):
         if isBinary:
-            logging.info('Binary message received: %s bytes', len(payload))
+            logger.info('Binary message received: %s bytes', len(payload))
         else:
-            logging.info('Text message received: %s', payload.decode('utf8'))
+            logger.info('Text message received: %s', payload.decode('utf8'))
 
     def connectionLost(self, reason):
         WebSocketServerProtocol.connectionLost(self, reason)
         self.factory.unregister(self)
 
     def onClose(self, wasClean, code, reason):
-        logging.info('WebSocket connection closed: %s', reason)
+        logger.info('WebSocket connection closed: %s', reason)
 
 
 class dashboardFactory(WebSocketServerFactory):
@@ -510,19 +528,19 @@ class dashboardFactory(WebSocketServerFactory):
 
     def register(self, client):
         if client not in self.clients:
-            logging.info('registered client %s', client.peer)
+            logger.info('registered client %s', client.peer)
             self.clients.append(client)
 
     def unregister(self, client):
         if client in self.clients:
-            logging.info('unregistered client %s', client.peer)
+            logger.info('unregistered client %s', client.peer)
             self.clients.remove(client)
 
     def broadcast(self, msg):
-        logging.debug('broadcasting message to: %s', self.clients)
+        logger.debug('broadcasting message to: %s', self.clients)
         for c in self.clients:
             c.sendMessage(msg.encode('utf8'))
-            logging.debug('message sent to %s', c.peer)
+            logger.debug('message sent to %s', c.peer)
 
 #
 # STATIC WEBSERVER
@@ -530,7 +548,7 @@ class dashboardFactory(WebSocketServerFactory):
 class web_server(Resource):
     isLeaf = True
     def render_GET(self, request):
-        logging.info('static website requested: %s', request)
+        logger.info('static website requested: %s', request)
         if request.uri == '/':
             return index_html
         else:
@@ -548,33 +566,33 @@ def mk_aliases(_config):
         logger.info('[ALIAS]  %s', result)
 
     # Make Dictionaries
-    peer_ids = mk_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['PEER_FILE'])
+    peer_ids = mk_full_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['PEER_FILE'],'peer')
     if peer_ids:
         logger.info('[ALIAS] ID ALIAS MAPPER: peer_ids dictionary is available')
 
-    subscriber_ids = mk_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['SUBSCRIBER_FILE'])
+    subscriber_ids = mk_full_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['SUBSCRIBER_FILE'],'subscriber')
     if subscriber_ids:
         logger.info('[ALIAS] ID ALIAS MAPPER: subscriber_ids dictionary is available')
 
-    talkgroup_ids = mk_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['TGID_FILE'])
+    talkgroup_ids = mk_full_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['TGID_FILE'],'tgid')
     if talkgroup_ids:
         logger.info('[ALIAS] ID ALIAS MAPPER: talkgroup_ids dictionary is available')
 
-    local_subscriber_ids = mk_full_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['LOCAL_SUB_FILE'])
+    local_subscriber_ids = mk_full_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['LOCAL_SUB_FILE'],'subscriber')
     if local_subscriber_ids:
-        logging.info('[ALIAS] ID ALIAS MAPPER: local_subscriber_ids added to subscriber_ids dictionary')
+        logger.info('[ALIAS] ID ALIAS MAPPER: local_subscriber_ids added to subscriber_ids dictionary')
         subscriber_ids.update(local_subscriber_ids)
 
-    local_peer_ids = mk_full_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['LOCAL_PEER_FILE'])
+    local_peer_ids = mk_full_id_dict(_config['ALIASES']['PATH'], _config['ALIASES']['LOCAL_PEER_FILE'],'peer')
     if local_peer_ids:
-        logging.info('[ALIAS] ID ALIAS MAPPER: local_peer_ids added peer_ids dictionary')
+        logger.info('[ALIAS] ID ALIAS MAPPER: local_peer_ids added peer_ids dictionary')
         peer_ids.update(local_peer_ids)
 
     return peer_ids, subscriber_ids, talkgroup_ids
 
 if __name__ == '__main__':
     import argparse
-    import system
+    #import system
     import os
     import signal
 
@@ -583,13 +601,13 @@ if __name__ == '__main__':
 
     # CLI argument parser - handles picking up the config file from the command line, and sending a "help" message
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE', help='/full/path/to/config.file (usually hblink.cfg)')
+    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE', help='/full/path/to/config.file (usually dmrmonitor .cfg)')
     parser.add_argument('-l', '--logging', action='store', dest='LOG_LEVEL', help='Override config file logging level.')
     cli_args = parser.parse_args()
 
     # Ensure we have a path for the config file, if one wasn't specified, then use the execution directory
     if not cli_args.CONFIG_FILE:
-        cli_args.CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+'/hblink.cfg'
+        cli_args.CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+'/dmrmonitor.cfg'
 
     # Call the external routine to build the configuration dictionary
     CONFIG = config.build_config(cli_args.CONFIG_FILE)
@@ -601,10 +619,13 @@ if __name__ == '__main__':
     logger.info('\n\nCopyright (c) 2013, 2014, 2015, 2016, 2018, 2019\n\tThe Regents of the K0USY Group. All rights reserved.\n')
     logger.debug('(GLOBAL) Logging system started, anything from here on gets logged')
 
+    WEBSERVICE_STR = ":{0}".format(CONFIG['WEBSITE']['WEBSERVICE_PORT'])
+    logger.debug('(GLOBAL) WEBSERVICE_STR %s', WEBSERVICE_STR)
+
     # Set up the signal handler
     def sig_handler(_signal, _frame):
         logger.info('(GLOBAL) SHUTDOWN: DMRmonitor IS TERMINATING WITH SIGNAL %s', str(_signal))
-        hblink_handler(_signal, _frame)
+        dmrmonitor_handler(_signal, _frame)
         logger.info('(GLOBAL) SHUTDOWN: ALL SYSTEM HANDLERS EXECUTED - STOPPING REACTOR')
         reactor.stop()
 
@@ -614,11 +635,11 @@ if __name__ == '__main__':
 
     peer_ids, subscriber_ids, talkgroup_ids = mk_aliases(CONFIG)
 
-    logger.info('(GLOBAL) DMRmonitor \'web_tables.py\' -- SYSTEM STARTING...')
+    logger.info('(GLOBAL) DMRmonitor \'dmrmonitor.py\' -- SYSTEM STARTING...')
 
     # Jinja2 Stuff
     env = Environment(
-        loader=PackageLoader('web_tables', 'templates'),
+        loader=PackageLoader('dmrmonitor', 'templates'),
         autoescape=select_autoescape(['html', 'xml'])
     )
 
@@ -626,24 +647,26 @@ if __name__ == '__main__':
     btemplate = env.get_template('bridge_table.html')
 
     # Create Static Website index file
-    index_html = get_template(_config['WEBSITE']['PATH'] + 'index_template.html')
-    index_html = index_html.replace('<<<system_name>>>', _config['GLOBAL']['REPORT_NAME'])
+    index_html = get_template(CONFIG['WEBSITE']['PATH'] + 'index_template.html')
+    index_html = index_html.replace('<<<system_name>>>', CONFIG['GLOBAL']['REPORT_NAME'])
     index_html = index_html.replace('<<<webservice_port>>>', WEBSERVICE_STR)
 
-    # Start update loop
-    update_stats = task.LoopingCall(build_stats)
-    update_stats.start(_config['GLOBAL']['FREQUENCY'])
+
 
     # Connect to DMRlink
-    reactor.connectTCP(_config['GLOBAL']['DMRLINK_IP'], _config['GLOBAL']['DMRLINK_PORT'], reportClientFactory())
+    reactor.connectTCP(CONFIG['GLOBAL']['DMRLINK_IP'], CONFIG['GLOBAL']['DMRLINK_PORT'], reportClientFactory())
 
     # Create websocket server to push content to clients
     dashboard_server = dashboardFactory('ws://*'+WEBSERVICE_STR)
     dashboard_server.protocol = dashboard
-    reactor.listenTCP(_config['WEBSITE']['WEBSERVICE_PORT'], dashboard_server)
+    reactor.listenTCP(CONFIG['WEBSITE']['WEBSERVICE_PORT'], dashboard_server)
+
+    # Start update loop
+    update_stats = task.LoopingCall(build_stats)
+    update_stats.start(CONFIG['GLOBAL']['FREQUENCY'])
 
     # Create static web server to push initial index.html
     website = Site(web_server())
-    reactor.listenTCP(_config['WEBSITE']['WEB_SERVER_PORT'], website)
+    reactor.listenTCP(CONFIG['WEBSITE']['WEB_SERVER_PORT'], website)
 
     reactor.run()
