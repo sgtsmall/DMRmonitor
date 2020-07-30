@@ -21,6 +21,14 @@ DVSwitch@groups.io
 - requirements.txt now have some fixed versions (for continued operation with python2)
 - needs libffi-dev libssl-dev
 
+## INSTALL
+This is still python2 version
+(DEBIAN)
+apt-get install -y libffi-dev libssl-dev
+pip install -r requirements.txt
+
+copy/create ipscmonitor.cfg
+
 
 Over the years, the biggest request recevied for DMRlink (other than call-routing/bridging tools) has been web-based diagnostics and/or statistics for the program.
 
