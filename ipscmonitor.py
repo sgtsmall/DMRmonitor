@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-#
+# -*- coding: utf-8 -*-
 ###############################################################################
 # updated 2020 VK2PSF
 # first pass to align config file format
@@ -66,9 +66,7 @@ from dmr_utils.utils import int_id, get_alias, try_download, mk_full_id_dict
 import config
 import log
 
-# Configuration variables and IPSC constants
-#from config import *
-#WEBSERVICE_STR = ":{0}".format(_config['WEBSITE']['WEBSERVICE_PORT'])
+# IPSC constants
 from ipsc_const import *
 
 # Opcodes for reporting protocol to DMRlink
@@ -621,6 +619,8 @@ if __name__ == '__main__':
 
     WEBSERVICE_STR = ":{0}".format(CONFIG['WEBSITE']['WEBSERVICE_PORT'])
     logger.debug('(GLOBAL) WEBSERVICE_STR %s', WEBSERVICE_STR)
+    SYSTEMNAME_STR = "{0}".format(CONFIG['GLOBAL']['REPORT_NAME'])
+    logger.debug('(GLOBAL) SYSTEMNAME_STR %s', SYSTEMNAME_STR)
 
     # Set up the signal handler
     def sig_handler(_signal, _frame):
@@ -648,7 +648,7 @@ if __name__ == '__main__':
 
     # Create Static Website index file
     index_html = get_template(CONFIG['WEBSITE']['PATH'] + 'index_template.html')
-    index_html = index_html.replace('<<<system_name>>>', CONFIG['GLOBAL']['REPORT_NAME'])
+    index_html = index_html.replace('<<<system_name>>>', SYSTEMNAME_STR)
     index_html = index_html.replace('<<<webservice_port>>>', WEBSERVICE_STR)
 
 
