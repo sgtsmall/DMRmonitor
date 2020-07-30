@@ -58,20 +58,19 @@ def build_config(_config_file):
             if section == 'GLOBAL':
                 CONFIG['GLOBAL'].update({
                     'REPORT_NAME': config.get(section, 'REPORT_NAME'),
-                    'CONFIG_INC': config.getint(section, 'CONFIG_INC'),
-                    'BRIDGES_INC': config.getint(section, 'BRIDGES_INC'),
-                    'DMRLINK_IP': config.getint(section, 'DMRLINK_IP'),
-                    'DMRLINK_PORT': config.get(section, 'DMRLINK_PORT'),
-                    'FREQUENCY': config.get(section, 'FREQUENCY')
+                    'CONFIG_INC': config.get(section, 'CONFIG_INC'),
+                    'BRIDGES_INC': config.get(section, 'BRIDGES_INC'),
+                    'DMRLINK_IP': config.get(section, 'DMRLINK_IP'),
+                    'DMRLINK_PORT': config.getint(section, 'DMRLINK_PORT'),
+                    'FREQUENCY': config.getint(section, 'FREQUENCY')
                 })
+
             elif section == 'WEBSITE':
                 CONFIG['WEBSITE'].update({
                     'PATH': config.get(section, 'PATH'),
-                    'WEB_SERVER_PORT': config.get(section, 'WEB_SERVER_PORT'),
-                    'WEBSERVICE_PORT': config.get(section, 'WEBSERVICE_PORT')
+                    'WEB_SERVER_PORT': config.getint(section, 'WEB_SERVER_PORT'),
+                    'WEBSERVICE_PORT': config.getint(section, 'WEBSERVICE_PORT')
                 })
-
-
 
             elif section == 'LOGGER':
                 CONFIG['LOGGER'].update({
