@@ -19,10 +19,10 @@
 ###############################################################################
 
 '''
-This module generates the configuration data structure for ipscmonitor.py and
+This module generates the configuration data structure for dmrmonitor.py and
 assoicated programs that use it. It has been seaparated into a different
-module so as to keep ipscmonitor.py easier to navigate. This file only needs
-updated if the items in the main configuraiton file (usually ipscmonitor.cfg)
+module so as to keep dmrmonitor.py easier to navigate. This file only needs
+updated if the items in the main configuraiton file (usually dmrmonitor.cfg)
 change.
 '''
 
@@ -117,13 +117,13 @@ if __name__ == '__main__':
 
     # CLI argument parser - handles picking up the config file from the command line, and sending a "help" message
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE', help='/full/path/to/config.file (usually ipscmonitor.cfg)')
+    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE', help='/full/path/to/config.file (usually dmrmonitor.cfg)')
     cli_args = parser.parse_args()
 
 
     # Ensure we have a path for the config file, if one wasn't specified, then use the execution directory
     if not cli_args.CONFIG_FILE:
-        cli_args.CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+'/ipscmonitor.cfg'
+        cli_args.CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+'/dmrmonitor.cfg'
 
     CONFIG = build_config(cli_args.CONFIG_FILE)
     pprint(CONFIG)

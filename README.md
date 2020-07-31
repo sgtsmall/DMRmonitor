@@ -27,7 +27,15 @@ This is still python2 version
 apt-get install -y libffi-dev libssl-dev
 pip install -r requirements.txt
 
-copy/create ipscmonitor.cfg
+copy/create dmrmonitor.cfg
+
+## USAGE
+
+python dmrmonitor.py -l [LOG_LEVEL] -c configfile.cfg
+
+
+-l overrides the LOG_LEVEL [DEBUG, INFO, ERROR] in the config file
+-c override default config file (dmrmonitor.cfg)
 
 
 Over the years, the biggest request recevied for DMRlink (other than call-routing/bridging tools) has been web-based diagnostics and/or statistics for the program.
