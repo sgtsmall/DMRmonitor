@@ -549,6 +549,8 @@ class web_server(Resource):
         logger.info('static website requested: %s', request)
         if request.uri == '/':
             return index_html
+        elif request.uri == '/favicon.ico':
+            return favicon_ico
         else:
             return 'Bad request'
 
@@ -650,6 +652,7 @@ if __name__ == '__main__':
     index_html = get_template(CONFIG['WEBSITE']['PATH'] + 'index_template.html')
     index_html = index_html.replace('<<<system_name>>>', SYSTEMNAME_STR)
     index_html = index_html.replace('<<<webservice_port>>>', WEBSERVICE_STR)
+    favicon_ico = get_template(CONFIG['WEBSITE']['PATH'] + 'favicon.ico')
 
 
 
