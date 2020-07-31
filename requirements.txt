@@ -6,4 +6,4 @@ autobahn==19.11.2
 jinja2>=2.9.6
 PyOpenSSL==19.1.0
 service_identity>=18.1.0
-configparser=4.0.2
+configparser>=4.0.2
