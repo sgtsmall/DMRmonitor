@@ -185,6 +185,8 @@ def process_rcm(_data):
             CTABLE[_name]['PEERS'][_source][_ts]['DEST'] = _dest
             CTABLE[_name]['PEERS'][_source][_ts]['COLOR'] = GREEN
             CTABLE[_name]['PEERS'][_source][_ts]['LAST'] = now
+            if CONFIG['GLOBAL']['LOG_LASTHEARD']:
+                logger.info('LASTHEARD TS:{} TG: {:>5} {:12.12s} ID:{:8} {:25.25s}  RPT:{:8} {:20.20s} X:{}'.format(_ts, _dest, alias_tgid(_dest, talkgroup_ids), _src_sub, alias_short(_src_sub, subscriber_ids) , _src_peer, alias_call(_src_peer, peer_ids), _type))
         else:
             CTABLE[_name]['PEERS'][_source][_ts]['STATUS'] = ''
             CTABLE[_name]['PEERS'][_source][_ts]['TYPE'] = ''
@@ -547,12 +549,25 @@ class web_server(Resource):
     isLeaf = True
     def render_GET(self, request):
         logger.info('static website requested: %s', request)
-        if request.uri == '/':
-            return index_html
-        elif request.uri == '/favicon.ico':
-            return favicon_ico
+        if WEB_AUTH:
+          user = WEB_USER.encode('utf-8')
+          password = WEB_PASS.encode('utf-8')
+          auth = request.getHeader('Authorization')
+          if auth and auth.split(' ')[0] == 'Basic':
+             decodeddata = base64.b64decode(auth.split(' ')[1])
+             if decodeddata.split(b':') == [user, password]:
+                 logging.info('Authorization OK')
+                 return (index_html).encode('utf-8')
+          request.setResponseCode(401)
+          request.setHeader('WWW-Authenticate', 'Basic realm="realmname"')
+          logging.info('Someone wanted to get access without authorization')
+          return "<html<head></hread><body style=\"background-color: #EEEEEE;\"><br><br><br><center> \
+                    <fieldset style=\"width:600px;background-color:#e0e0e0e0;text-algin: center; margin-left:15px;margin-right:15px; \
+                     font-size:14px;border-top-left-radius: 10px; border-top-right-radius: 10px; \
+                     border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;\"> \
+                  <p><font size=5><b>Authorization Required</font></p></filed></center></body></html>".encode('utf-8')
         else:
-            return 'Bad request'
+            return (index_html).encode('utf-8')
 
 # ID ALIAS CREATION
 # Download
@@ -653,8 +668,10 @@ if __name__ == '__main__':
     index_html = index_html.replace('<<<system_name>>>', SYSTEMNAME_STR)
     index_html = index_html.replace('<<<webservice_port>>>', WEBSERVICE_STR)
     favicon_ico = get_template(CONFIG['WEBSITE']['PATH'] + 'favicon.ico')
-
-
+    if CLIENT_TIMEOUT > 0:
+        index_html = index_html.replace('<<<timeout_warning>>>', 'Continuous connections not allowed. Connections time out in {} seconds'.format(CLIENT_TIMEOUT))
+    else:
+        index_html = index_html.replace('<<<timeout_warning>>>', '')
 
     # Connect to DMRlink
     reactor.connectTCP(CONFIG['GLOBAL']['DMRLINK_IP'], CONFIG['GLOBAL']['DMRLINK_PORT'], reportClientFactory())
@@ -667,6 +684,10 @@ if __name__ == '__main__':
     # Start update loop
     update_stats = task.LoopingCall(build_stats)
     update_stats.start(CONFIG['GLOBAL']['FREQUENCY'])
+    # Start a timout loop
+    if CLIENT_TIMEOUT > 0:
+        timeout = task.LoopingCall(timeout_clients)
+        timeout.start(10)
 
     # Create static web server to push initial index.html
     website = Site(web_server())

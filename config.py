@@ -33,19 +33,20 @@ import sys
 from socket import gethostbyname
 
 # Does anybody read this stuff? There's a PEP somewhere that says I should do this.
-__author__     = 'Cortney T. Buffington, N0MJS'
-__copyright__  = 'Copyright (c) 2016-2018 Cortney T. Buffington, N0MJS and the K0USY Group'
-__credits__    = 'Colin Durbridge, G4EML, Steve Zingman, N4IRS; Mike Zingman, N4IRR; Jonathan Naylor, G4KLX; Hans Barthen, DL5DI; Torsten Shultze, DG1HT'
-__license__    = 'GNU GPLv3'
+__author__ = 'Cortney T. Buffington, N0MJS'
+__copyright__ = 'Copyright (c) 2016-2018 Cortney T. Buffington, N0MJS and the K0USY Group'
+__credits__ = 'Colin Durbridge, G4EML, Steve Zingman, N4IRS; Mike Zingman, N4IRR; Jonathan Naylor, G4KLX; Hans Barthen, DL5DI; Torsten Shultze, DG1HT'
+__license__ = 'GNU GPLv3'
 __maintainer__ = 'Cort Buffington, N0MJS'
-__email__      = 'n0mjs@me.com'
+__email__ = 'n0mjs@me.com'
 
 
 def build_config(_config_file):
     config = configparser.ConfigParser()
 
     if not config.read(_config_file):
-        sys.exit('Configuration file \''+_config_file+'\' is not a valid configuration file! Exiting...')
+        sys.exit('Configuration file \'' + _config_file +
+                 '\' is not a valid configuration file! Exiting...')
 
     CONFIG = {}
     CONFIG['GLOBAL'] = {}
@@ -69,7 +70,11 @@ def build_config(_config_file):
                 CONFIG['WEBSITE'].update({
                     'PATH': config.get(section, 'PATH'),
                     'WEB_SERVER_PORT': config.getint(section, 'WEB_SERVER_PORT'),
-                    'WEBSERVICE_PORT': config.getint(section, 'WEBSERVICE_PORT')
+                    'WEBSERVICE_PORT': config.getint(section, 'WEBSERVICE_PORT'),
+                    'CLIMATE_TIMEOUT': config.getint(section, 'CLIMATE_TIMEOUT'),
+                    'WEB_AUTH': config.get(section, 'WEB_AUTH'),
+                    'WEB_USER': config.get(section, 'WEB_USER'),
+                    'WEB_PASS': config.get(section, 'WEB_PASS')
                 })
 
             elif section == 'LOGGER':
@@ -77,7 +82,8 @@ def build_config(_config_file):
                     'LOG_FILE': config.get(section, 'LOG_FILE'),
                     'LOG_HANDLERS': config.get(section, 'LOG_HANDLERS'),
                     'LOG_LEVEL': config.get(section, 'LOG_LEVEL'),
-                    'LOG_NAME': config.get(section, 'LOG_NAME')
+                    'LOG_NAME': config.get(section, 'LOG_NAME'),
+                    'LOG_LASTHEARD': config.get(section, 'LOG_LASTHEARD')
                 })
                 if not CONFIG['LOGGER']['LOG_FILE']:
                     CONFIG['LOGGER']['LOG_FILE'] = '/dev/null'
@@ -96,12 +102,11 @@ def build_config(_config_file):
                     'STALE_TIME': config.getint(section, 'STALE_DAYS') * 86400,
                 })
 
-
-
     except configparser.Error as err:
         sys.exit('Error processing configuration file -- {}'.format(err))
 
     return CONFIG
+
 
 # Used to run this file direclty and print the config,
 # which might be useful for debugging
@@ -117,13 +122,14 @@ if __name__ == '__main__':
 
     # CLI argument parser - handles picking up the config file from the command line, and sending a "help" message
     parser = argparse.ArgumentParser()
-    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE', help='/full/path/to/config.file (usually dmrmonitor.cfg)')
+    parser.add_argument('-c', '--config', action='store', dest='CONFIG_FILE',
+                        help='/full/path/to/config.file (usually dmrmonitor.cfg)')
     cli_args = parser.parse_args()
-
 
     # Ensure we have a path for the config file, if one wasn't specified, then use the execution directory
     if not cli_args.CONFIG_FILE:
-        cli_args.CONFIG_FILE = os.path.dirname(os.path.abspath(__file__))+'/dmrmonitor.cfg'
+        cli_args.CONFIG_FILE = os.path.dirname(
+            os.path.abspath(__file__)) + '/dmrmonitor.cfg'
 
     CONFIG = build_config(cli_args.CONFIG_FILE)
     pprint(CONFIG)
