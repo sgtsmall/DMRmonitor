@@ -392,6 +392,19 @@ def build_stats():
             dashboard_server.broadcast(table)
         build_time = now
 
+def timeout_clients():
+    now = time()
+    try:
+        for client in dashboard_server.clients:
+            if dashboard_server.clients[client] + CONFIG['WEBSITE']['CLIENT_TIMEOUT'] < now:
+                logger.info('TIMEOUT: disconnecting client %s', dashboard_server.clients[client])
+                try:
+                    dashboard.sendClose(client)
+                except Exception as e:
+                    logger.error('Exception caught parsing client timeout %s', e)
+    except:
+        logger.info('CLIENT TIMEOUT: List does not exist, skipping. If this message persists, contact the developer')
+
 #
 # PROCESS INCOMING MESSAGES AND TAKE THE CORRECT ACTION DEPENING ON THE OPCODE
 #
@@ -549,9 +562,9 @@ class web_server(Resource):
     isLeaf = True
     def render_GET(self, request):
         logger.info('static website requested: %s', request)
-        if WEB_AUTH:
-          user = WEB_USER.encode('utf-8')
-          password = WEB_PASS.encode('utf-8')
+        if CONFIG['WEBSITE']['WEB_AUTH']:
+          user = CONFIG['WEBSITE']['WEB_USER'].encode('utf-8')
+          password = CONFIG['WEBSITE']['WEB_PASS'].encode('utf-8')
           auth = request.getHeader('Authorization')
           if auth and auth.split(' ')[0] == 'Basic':
              decodeddata = base64.b64decode(auth.split(' ')[1])
@@ -668,8 +681,8 @@ if __name__ == '__main__':
     index_html = index_html.replace('<<<system_name>>>', SYSTEMNAME_STR)
     index_html = index_html.replace('<<<webservice_port>>>', WEBSERVICE_STR)
     favicon_ico = get_template(CONFIG['WEBSITE']['PATH'] + 'favicon.ico')
-    if CLIENT_TIMEOUT > 0:
-        index_html = index_html.replace('<<<timeout_warning>>>', 'Continuous connections not allowed. Connections time out in {} seconds'.format(CLIENT_TIMEOUT))
+    if CONFIG['WEBSITE']['CLIENT_TIMEOUT'] > 0:
+        index_html = index_html.replace('<<<timeout_warning>>>', 'Continuous connections not allowed. Connections time out in {} seconds'.format(CONFIG['WEBSITE']['CLIENT_TIMEOUT']))
     else:
         index_html = index_html.replace('<<<timeout_warning>>>', '')
 
@@ -685,7 +698,7 @@ if __name__ == '__main__':
     update_stats = task.LoopingCall(build_stats)
     update_stats.start(CONFIG['GLOBAL']['FREQUENCY'])
     # Start a timout loop
-    if CLIENT_TIMEOUT > 0:
+    if CONFIG['WEBSITE']['CLIENT_TIMEOUT'] > 0:
         timeout = task.LoopingCall(timeout_clients)
         timeout.start(10)
 

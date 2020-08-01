@@ -71,7 +71,7 @@ def build_config(_config_file):
                     'PATH': config.get(section, 'PATH'),
                     'WEB_SERVER_PORT': config.getint(section, 'WEB_SERVER_PORT'),
                     'WEBSERVICE_PORT': config.getint(section, 'WEBSERVICE_PORT'),
-                    'CLIMATE_TIMEOUT': config.getint(section, 'CLIMATE_TIMEOUT'),
+                    'CLIENT_TIMEOUT': config.getint(section, 'CLIENT_TIMEOUT'),
                     'WEB_AUTH': config.get(section, 'WEB_AUTH'),
                     'WEB_USER': config.get(section, 'WEB_USER'),
                     'WEB_PASS': config.get(section, 'WEB_PASS')
