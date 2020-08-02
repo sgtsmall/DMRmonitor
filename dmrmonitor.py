@@ -46,7 +46,7 @@ from twisted.internet import reactor, task
 from twisted.web.server import Site
 from twisted.web.static import File
 from twisted.web.resource import Resource
-
+import base64
 # Autobahn provides websocket service under Twisted
 from autobahn.twisted.websocket import WebSocketServerProtocol, WebSocketServerFactory
 
@@ -185,7 +185,7 @@ def process_rcm(_data):
             CTABLE[_name]['PEERS'][_source][_ts]['DEST'] = _dest
             CTABLE[_name]['PEERS'][_source][_ts]['COLOR'] = GREEN
             CTABLE[_name]['PEERS'][_source][_ts]['LAST'] = now
-            if CONFIG['GLOBAL']['LOG_LASTHEARD']:
+            if LASTHEARD:
                 logger.info('LASTHEARD TS:{} TG: {:>5} {:12.12s} ID:{:8} {:25.25s}  RPT:{:8} {:20.20s} X:{}'.format(_ts, _dest, alias_tgid(_dest, talkgroup_ids), _src_sub, alias_short(_src_sub, subscriber_ids) , _src_peer, alias_call(_src_peer, peer_ids), _type))
         else:
             CTABLE[_name]['PEERS'][_source][_ts]['STATUS'] = ''
@@ -554,6 +554,21 @@ class dashboardFactory(WebSocketServerFactory):
         for c in self.clients:
             c.sendMessage(msg.encode('utf8'))
             logger.debug('message sent to %s', c.peer)
+# experiment timeout_clients
+    def timeout(self, client):
+       logger.debug('check timeout message to: %s', self.clients)
+       for client in self.clients:
+           if self.clients[client] + CONFIG['WEBSITE']['CLIENT_TIMEOUT'] < now:
+               logger.info('TIMEOUT: disconnecting client %s', self.clients[client])
+               try:
+                   dashboard.sendClose(client)
+               except Exception as e:
+                   logger.error('Exception caught parsing client timeout %s', e)
+           else:
+               logger.info('time registered client {}'.format(client))
+         #  self.clients.remove(client)
+
+
 
 #
 # STATIC WEBSERVER
@@ -562,18 +577,18 @@ class web_server(Resource):
     isLeaf = True
     def render_GET(self, request):
         logger.info('static website requested: %s', request)
-        if CONFIG['WEBSITE']['WEB_AUTH']:
-          user = CONFIG['WEBSITE']['WEB_USER'].encode('utf-8')
+        if WEBAUTH:
+          user = WEBUSER.encode('utf-8')
           password = CONFIG['WEBSITE']['WEB_PASS'].encode('utf-8')
           auth = request.getHeader('Authorization')
           if auth and auth.split(' ')[0] == 'Basic':
              decodeddata = base64.b64decode(auth.split(' ')[1])
              if decodeddata.split(b':') == [user, password]:
-                 logging.info('Authorization OK')
+                 logger.info('Authorization OK')
                  return (index_html).encode('utf-8')
           request.setResponseCode(401)
           request.setHeader('WWW-Authenticate', 'Basic realm="realmname"')
-          logging.info('Someone wanted to get access without authorization')
+          logger.info('Someone wanted to get access without authorization')
           return "<html<head></hread><body style=\"background-color: #EEEEEE;\"><br><br><br><center> \
                     <fieldset style=\"width:600px;background-color:#e0e0e0e0;text-algin: center; margin-left:15px;margin-right:15px; \
                      font-size:14px;border-top-left-radius: 10px; border-top-right-radius: 10px; \
@@ -651,6 +666,10 @@ if __name__ == '__main__':
     logger.debug('(GLOBAL) WEBSERVICE_STR %s', WEBSERVICE_STR)
     SYSTEMNAME_STR = "{0}".format(CONFIG['GLOBAL']['REPORT_NAME'])
     logger.debug('(GLOBAL) SYSTEMNAME_STR %s', SYSTEMNAME_STR)
+    logger.info('Config: {} {}'.format(CONFIG['WEBSITE']['WEB_AUTH'], CONFIG['WEBSITE']['WEB_USER']))
+    LASTHEARD = CONFIG['LOGGER']['LOG_LASTHEARD']
+    WEBAUTH = CONFIG['WEBSITE']['WEB_AUTH']
+    WEBUSER = CONFIG['WEBSITE']['WEB_USER']
 
     # Set up the signal handler
     def sig_handler(_signal, _frame):
