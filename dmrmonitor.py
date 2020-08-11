@@ -579,7 +579,7 @@ class web_server(Resource):
         logger.info('static website requested: %s', request)
         if WEBAUTH:
           user = WEBUSER.encode('utf-8')
-          password = CONFIG['WEBSITE']['WEB_PASS'].encode('utf-8')
+          password = WEBPASS.encode('utf-8')
           auth = request.getHeader('Authorization')
           if auth and auth.split(' ')[0] == 'Basic':
              decodeddata = base64.b64decode(auth.split(' ')[1])
@@ -670,6 +670,7 @@ if __name__ == '__main__':
     LASTHEARD = CONFIG['LOGGER']['LOG_LASTHEARD']
     WEBAUTH = CONFIG['WEBSITE']['WEB_AUTH']
     WEBUSER = CONFIG['WEBSITE']['WEB_USER']
+    WEBPASS = CONFIG['WEBSITE']['WEB_PASS']
 
     # Set up the signal handler
     def sig_handler(_signal, _frame):
