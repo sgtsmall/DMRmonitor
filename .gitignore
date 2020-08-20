@@ -1,5 +1,6 @@
 *.pyc
 *.csv
 .DS_Store
-*.log
+./*.log
 *.json
+dmrmonitor.cfg

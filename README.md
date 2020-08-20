@@ -59,6 +59,11 @@ Some things I'm going to stick to pretty closely. Here they are:
 + Does not provide data that's easily misunderstood
 + Incorporates RCM with with repeaters to display their state
 
+
+# testing
+ docker run -it -p 80:8085 -p 9005:9005 -v /Users/AlexS/Github/DMRmonitor:/opt/dmrlink/DMRmonitor -v ~/etc/timezone:/etc/localtime:ro --entrypoint /bin/sh dmrhblinkpy2:latest
+
+
 ***0x49 DE N0MJS***
 
 Copyright (C) 2013-2017  Cortney T. Buffington, N0MJS <n0mjs@me.com>

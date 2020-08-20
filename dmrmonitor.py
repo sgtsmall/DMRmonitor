@@ -57,7 +57,8 @@ from cPickle import loads
 from binascii import b2a_hex as h
 from os.path import getmtime
 from collections import deque
-
+import csv
+from itertools import islice
 # Web templating environment
 from jinja2 import Environment, PackageLoader, select_autoescape
 
@@ -160,6 +161,7 @@ def alias_tgid(_id, _dict):
 #
 def process_rcm(_data):
     now = time()
+    _cnow = strftime('%Y-%m-%d %H:%M:%S', localtime(now))
     _payload = _data.split(',', 1)
     _name = _payload[0]
     _data = _payload[1]
@@ -167,27 +169,27 @@ def process_rcm(_data):
     if _packettype == CALL_MON_STATUS:
         logger.debug('RCM STATUS: {}: {}'.format(_name, repr(_data)))
         _source   = _data[1:5]
-        _src_peer = int_id(_data[5:9])
+        _sourcei  = int_id(_data[1:5])
+        _src_peer = int_id(_data[5:9]) #p5
         #_seq_num  = _data[9:13]
-        _ts       = int_id(_data[13])+1
+        _ts       = int_id(_data[13])+1 #p7
         _status   = STATUS[_data[15]] # suspect [14:16] but nothing in leading byte?
-        _src_sub  = int_id(_data[16:19])
-        _dest     = int_id(_data[19:22])
-        _type     = TYPE[_data[22]]
+        _src_sub  = int_id(_data[16:19]) #p6
+        _dest     = int_id(_data[19:22]) #p8
+        _type     = TYPE[_data[22]] #p9
         #_prio     = _data[23]
         #_sec      = _data[24]
 
         if _status != 'End' and _status != 'BSID ON':
             CTABLE[_name]['PEERS'][_source][_ts]['STATUS'] = _status
             CTABLE[_name]['PEERS'][_source][_ts]['TYPE'] = _type
-            CTABLE[_name]['PEERS'][_source][_ts]['SRC_SUB'] = alias_string(_src_sub, subscriber_ids)
-            CTABLE[_name]['PEERS'][_source][_ts]['SRC_PEER'] = alias_string(_src_peer, peer_ids)
+            CTABLE[_name]['PEERS'][_source][_ts]['SRC_SUB'] = alias_short(_src_sub, subscriber_ids)
+            CTABLE[_name]['PEERS'][_source][_ts]['SRC_PEER'] = alias_call(_src_peer, peer_ids)
             CTABLE[_name]['PEERS'][_source][_ts]['DEST'] = _dest
             CTABLE[_name]['PEERS'][_source][_ts]['COLOR'] = GREEN
             CTABLE[_name]['PEERS'][_source][_ts]['LAST'] = now
-            if LASTHEARD:
-                logger.info('LASTHEARD TS:{} TG: {:>5} {:12.12s} ID:{:8} {:25.25s}  RPT:{:8} {:20.20s} X:{}'.format(_ts, _dest, alias_tgid(_dest, talkgroup_ids), _src_sub, alias_short(_src_sub, subscriber_ids) , _src_peer, alias_call(_src_peer, peer_ids), _type))
         else:
+
             CTABLE[_name]['PEERS'][_source][_ts]['STATUS'] = ''
             CTABLE[_name]['PEERS'][_source][_ts]['TYPE'] = ''
             CTABLE[_name]['PEERS'][_source][_ts]['SRC_SUB'] = ''
@@ -195,6 +197,42 @@ def process_rcm(_data):
             CTABLE[_name]['PEERS'][_source][_ts]['DEST'] = ''
             CTABLE[_name]['PEERS'][_source][_ts]['COLOR'] = WHITE
             CTABLE[_name]['PEERS'][_source][_ts]['LAST'] = now
+#   p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8],alias_tgid(int(p[8]),talkgroup_ids),p[6], alias_short(int(p[6]), subscriber_ids))
+#9 - , 0 - calltype, 1 - action , 2 - trx , 3 - system, 4 - streamid, 5 - alias_call , 6 - _src_sub,7 -timeslot , 8 - tgid[_dest],
+            if LASTHEARD:
+                logger.info('LASTHEARD TS:{} TG: {:>5} {:12.12s} ID:{:8} {:25.25s}  RPT:{:8} {:20.20s} X:{}'.format(_ts, _dest, alias_tgid(_dest, talkgroup_ids), _src_sub, alias_short(_src_sub, subscriber_ids) , _src_peer, alias_call(_src_peer, peer_ids), _sourcei))
+#                log_lh_message = '{},{},{},{},{},{},{},TS{},TG{},{},{},{}'.format(_now, p[9], p[0], p[1], p[3], p[5], alias_call(int(p[5]), subscriber_ids), p[7], p[8],alias_tgid(_dest,talkgroup_ids),p[6], alias_short(int(p[6]), subscriber_ids))
+                log_lh_message = '{},{},{},{},{},{},TS{},TG{},{},{},{}'.format(_cnow, _type, _status, _sourcei,  _src_peer, alias_call(_src_peer, peer_ids), _ts, _dest, alias_tgid(_dest, talkgroup_ids),_src_sub, alias_short(_src_sub, subscriber_ids))
+                lh_logfile = open(LOG_PATH+"lastheard.log", "a")
+                lh_logfile.write(log_lh_message + '\n')
+                lh_logfile.close()
+                my_list=[]
+                n=0
+                f = open("templates/lastheard.html", "w")
+                f.write("<br><fieldset style=\"border-radius: 8px; background-color:#e0e0e0e0; text-algin: lef; margin-left:15px;margin-right:15px;font-size:14px;border-top-left-radius: 10px; border-top-right-radius: 10px;border-bottom-left-radius: 10px; border-bottom-right-radius: 10px;\">\n")
+                f.write("<legend><b><font color=\"#000\">&nbsp;.: Lastheard :.&nbsp;</font></b></legend>\n")
+                f.write("<table style=\"width:100%; font: 10pt arial, sans-serif\">\n")
+                f.write("<TR style=\" height: 32px;font: 10pt arial, sans-serif; background-color:#9dc209; color:black\"><TH>Date</TH><TH>Time</TH><TH>Slot</TH><TH>Callsign (DMR-Id)</TH><TH>Name</TH><TH>TG#</TH><TH>TG Name</TH><TH>Source ID</TH><TH>System</TH></TR>\n")
+                with open(LOG_PATH+"lastheard.log", "r") as textfile:
+                    for row in islice(reversed(list(csv.reader(textfile))),100):
+                      dur="1.0"
+#                    duration=row[1]
+#                    dur=str(int(float(duration.strip())))
+                      if row[9] not in my_list:
+                         if len(row) < 12:
+                             hline="<TR style=\"background-color:#f9f9f9f9;\"><TD>"+row[0][:10]+"</TD><TD>"+row[0][11:16]+"</TD><TD>"+row[6][2:]+"</TD><TD><font color=brown><b><a target=\"_blank\" href=https://qrz.com/db/"+row[10]+">"+row[10]+"</a></b></font><span style=\"font: 7pt arial,sans-serif\"> ("+row[9]+")</span></TD><TD><font color=#002d62><b></b></font></TD><TD><font color=blue><b>"+row[7][2:]+"</b></font></TD><TD><font color=green><b>"+row[8]+"</b></font></TD><TD>"+row[4]+"</TD><TD>"+row[3]+"</TD></TR>"
+                             my_list.append(row[9])
+                             n += 1
+                         else:
+                             hline="<TR style=\"background-color:#f9f9f9f9;\"><TD>"+row[0][:10]+"</TD><TD>"+row[0][11:16]+"</TD><TD>"+row[6][2:]+"</TD><TD><font color=brown><b><a target=\"_blank\" href=https://qrz.com/db/"+row[10]+">"+row[10]+"</a></b></font><span style=\"font: 7pt arial,sans-serif\"> ("+row[9]+")</span></TD><TD><font color=#002d62><b>"+row[11]+"</b></font></TD><TD><font color=blue><b>"+row[7][2:]+"</b></font></TD><TD><font color=green><b>"+row[8]+"</b></font></TD><TD>"+row[4]+"</TD><TD>"+row[3]+"</TD></TR>"
+                             my_list.append(row[9])
+                             n += 1
+                         f.write(hline+"\n")
+                      if n == 10:
+                         break
+                f.write("</table></fieldset><br>")
+                f.close()
+                # End of Lastheard
 
     elif _packettype == CALL_MON_RPT:
         logger.debug('RCM REPEAT: {}: {}'.format(_name, repr(_data)))
@@ -671,6 +709,7 @@ if __name__ == '__main__':
     WEBAUTH = CONFIG['WEBSITE']['WEB_AUTH']
     WEBUSER = CONFIG['WEBSITE']['WEB_USER']
     WEBPASS = CONFIG['WEBSITE']['WEB_PASS']
+    LOG_PATH = CONFIG['LOGGER']['LOG_PATH']
 
     # Set up the signal handler
     def sig_handler(_signal, _frame):

@@ -79,6 +79,7 @@ def build_config(_config_file):
 
             elif section == 'LOGGER':
                 CONFIG['LOGGER'].update({
+                    'LOG_PATH': config.get(section, 'LOG_PATH'),
                     'LOG_FILE': config.get(section, 'LOG_FILE'),
                     'LOG_HANDLERS': config.get(section, 'LOG_HANDLERS'),
                     'LOG_LEVEL': config.get(section, 'LOG_LEVEL'),
