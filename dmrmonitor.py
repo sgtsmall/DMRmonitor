@@ -56,6 +56,7 @@ from time import time, strftime, localtime
 from cPickle import loads
 from binascii import b2a_hex as h
 from os.path import getmtime
+from os import environ
 from collections import deque
 import csv
 from itertools import islice
@@ -710,6 +711,7 @@ if __name__ == '__main__':
     WEBUSER = CONFIG['WEBSITE']['WEB_USER']
     WEBPASS = CONFIG['WEBSITE']['WEB_PASS']
     LOG_PATH = CONFIG['LOGGER']['LOG_PATH']
+    environ['TZ'] = CONFIG['WEBSITE']['WEB_TZ']
 
     # Set up the signal handler
     def sig_handler(_signal, _frame):

@@ -74,7 +74,8 @@ def build_config(_config_file):
                     'CLIENT_TIMEOUT': config.getint(section, 'CLIENT_TIMEOUT'),
                     'WEB_AUTH': config.get(section, 'WEB_AUTH'),
                     'WEB_USER': config.get(section, 'WEB_USER'),
-                    'WEB_PASS': config.get(section, 'WEB_PASS')
+                    'WEB_PASS': config.get(section, 'WEB_PASS'),
+                    'WEB_TZ': config.get(section, 'WEB_TZ')
                 })
 
             elif section == 'LOGGER':
